@@ -11,8 +11,8 @@ import javax.jws.soap.SOAPBinding.Style;
  * 
  * Clients can
  * <ul>
- * <li>Import structured data from RDBMS into HDFS
- * <li>Export structured data from HDFS to RDBM
+ * <li>Import structured data from RDBMS into HDFS (backed by Apache sqoop)
+ * <li>Export structured data from HDFS to RDBM (backed by Apache sqoop)
  * <li>Deploy custom MapReduce code onto the cluster (as JAR) and run it (If
  * additional resources are required for the MR, they should be embedded into
  * the JAR.)
