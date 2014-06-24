@@ -42,11 +42,11 @@ public interface MapReduceWSI {
 	 * must call this method first and use the scope ID they obtain for any
 	 * further API calls.
 	 * 
-	 * Furthermore, calls to {@link #createScope} should be matched with calls to
-	 * {@link #deleteScope}
+	 * Furthermore, calls to {@link #createScope} should be matched with calls
+	 * to {@link #deleteScope}
 	 * */
 	@WebMethod
-	long createScope();
+	long createScope() throws MapReduceWSIException;
 
 	/**
 	 * Delete a scope previously created using {@link #createScope}
@@ -56,7 +56,7 @@ public interface MapReduceWSI {
 	 * calls (unless re-issued by {@link #createScope}).
 	 * */
 	@WebMethod
-	void deleteScope(long scopeId);
+	void deleteScope(long scopeId) throws MapReduceWSIException;
 
 	/**
 	 * Run a MR job from a given JAR archive.
@@ -75,7 +75,8 @@ public interface MapReduceWSI {
 	 *            Path to the (JDK 1.7-compatible) JAR on the source machine.
 	 */
 	@WebMethod
-	void runMapReduce(long scopeId, String srcJarName, String[] arguments);
+	void runMapReduce(long scopeId, String srcJarName, String[] arguments)
+			throws MapReduceWSIException;
 
 	/**
 	 * Import tuples from a RDBMS into HDFS
@@ -87,16 +88,16 @@ public interface MapReduceWSI {
 	 * @param destinationName
 	 *            Destination name under which to store the data in HDFS. Note
 	 *            that the actual physical HDFS path has a prefix that depends
-	 *            on the scope. 
+	 *            on the scope.
 	 * @see runMapReduce
 	 * */
 	@WebMethod
 	void importIntoHDFS(long scopeId, String jdbcURI, String dbName,
 			String dbUser, String dbCredentials, String query,
-			String destinationName);
+			String destinationName) throws MapReduceWSIException;
 
 	// TODO
 	void exportToHDFS(long scopeId, String jdbcURI, String dbName,
 			String dbUser, String dbCredentials, String query,
-			String destinationName);
+			String destinationName)  throws MapReduceWSIException;
 }
