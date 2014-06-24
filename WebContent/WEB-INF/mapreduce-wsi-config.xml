@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
 <properties>
+
+<!-- TODO: CHANGE THIS TO YOUR SETUP
+ -->
 <entry key="remoteHost">centos-mr-worker-1f8ad9d3-e129-42aa-99f0-3cdb9e1eb679.novalocal</entry>
-<entry key="remoteUser">hdfsuser</entry>
-<entry key="remotePassword"></entry>
+<entry key="remotePassword">mapreduce_wsi</entry>
+
+<!-- If you change the user name, make sure to also adjust
+     the hardcoded value in the setup/hadoop_prepare.sh script
+ -->
+<entry key="remoteUser">mapreduce_wsi</entry>
+
+<!-- If you change any of these folders, make sure to also adjust
+     the setup/hadoop_prepare.sh script
+ -->
+<entry key="remoteBaseLocalFolder">~/mapreduce_wsi_local</entry>
+<entry key="remoteBaseHDFSFolder">/user/mapreduce_wsi</entry>
+
 </properties>

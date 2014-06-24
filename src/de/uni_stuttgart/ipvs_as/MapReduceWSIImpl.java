@@ -42,7 +42,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 		// Create both HDFS and local folders
 		try {
 			execRemote("hadoop fs -mkdir " + getHDFSDir(scopeId));
-			execRemote("mkdir " + getRemoteLocalDir(scopeId));
+			execRemote("mkdir -p " + getRemoteLocalDir(scopeId));
 		} catch (MapReduceWSIException e) {
 			throw new MapReduceWSIException("Failed to create scope", e);
 		}
@@ -90,17 +90,17 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 			String destinationName) throws MapReduceWSIException {
 		// TODO
 	}
-	
-	
+
 	private String getRemoteLocalDir(long scopeId) {
-		return "~/mapreduce-wsi-local/" + scopeId;
+		return String.format("%s/%s",
+				getConfig().getProperty("remoteBaseLocalFolder"), scopeId);
 	}
 
 	private String getHDFSDir(long scopeId) {
-		return "/mapreduce-wsi/" + scopeId;
+		return String.format("%s/%s",
+				getConfig().getProperty("remoteBaseHDFSFolder"), scopeId);
 	}
 
-	
 	/**
 	 * Execute a given command on the remote host. No further checking is
 	 * performed on the command string.
@@ -159,8 +159,8 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 	private SSHExec initSSHConnection() throws MapReduceWSIException {
 		Properties properties = getConfig();
 		ConnBean cb = new ConnBean(properties.getProperty("remoteHost"),
-				properties.getProperty("remoteUserName"),
-				properties.getProperty("remotePassWord"));
+				properties.getProperty("remoteUser"),
+				properties.getProperty("remotePassword"));
 		SSHExec sshConnection = SSHExec.getInstance(cb);
 		if (!sshConnection.connect()) {
 			throw new MapReduceWSIException("Failed to connect to remote host "

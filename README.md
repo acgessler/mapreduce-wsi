@@ -19,9 +19,19 @@ Documentation
 TODO: link javadoc
 
 
+Cluster setup
+-------
+
+The _remote host_ is any node in your hadoop cluster that has network connectivity to the MapReduceWSI service.
+
+- On the remote host, make sure the oozie, yarn and hadoop binaries are available
+- On the remote host, execute `setup/hadoop_prepare.sh` under an account that can do password-less sudo
+- Make sure the remote host allows password-only authentication for SSH.
+
 Deployment using Tomcat 7
 -------
 
+- Update `WEB-INF/mapreduce-wsi-config.xml` with your remote host info
 - Build, export to WAR. Copy WAR to the `$TOMCAT/webapps` folder.
 - Get JAX-WS RI dependencies from http://jax-ws.java.net/ and copy all jars from `lib` to `$TOMCAT/lib`
 - (Re)start Tomcat
