@@ -37,7 +37,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 		//
 		// Otherwise, to really guarantee an unique scope we
 		// would need an atomic counter on the cluster.
-		final long scopeId = (new Random()).nextLong();
+		final long scopeId = Math.abs((new Random()).nextLong());
 
 		// Create both HDFS and local folders
 		try {
