@@ -11,4 +11,8 @@ public class MapReduceWSIException extends Exception {
 		super(message, cause);
 	}
 
+	public MapReduceWSIException(String string) {
+		super(string);
+	}
+
 }

@@ -1,13 +1,17 @@
 package de.uni_stuttgart.ipvs_as;
 
+import java.util.Properties;
 import java.util.Random;
 
+import javax.annotation.Resource;
 import javax.jws.WebService;
+import javax.servlet.ServletContext;
+import javax.xml.ws.WebServiceContext;
+import javax.xml.ws.handler.MessageContext;
 
 import net.neoremind.sshxcute.core.ConnBean;
 import net.neoremind.sshxcute.core.SSHExec;
 import net.neoremind.sshxcute.exception.TaskExecFailException;
-import net.neoremind.sshxcute.task.CustomTask;
 import net.neoremind.sshxcute.task.impl.ExecCommand;
 
 /**
@@ -23,8 +27,8 @@ import net.neoremind.sshxcute.task.impl.ExecCommand;
 @WebService(endpointInterface = "de.uni_stuttgart.ipvs_as.MapReduceWSI")
 public class MapReduceWSIImpl implements MapReduceWSI {
 
-	private static volatile SSHExec sharedSSH;
-	private static final Object sharedSSHMutex = new Object();
+	@Resource
+	private WebServiceContext context;
 
 	@Override
 	public long createScope() throws MapReduceWSIException {
@@ -47,7 +51,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 
 	@Override
 	public void deleteScope(long scopeId) throws MapReduceWSIException {
-
+		// Delete both local and HDFS folders (+ contents)
 		try {
 			execRemote("hadoop fs -rmr " + getHDFSDir(scopeId));
 			execRemote("rm -rf " + getRemoteLocalDir(scopeId));
@@ -63,6 +67,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 		final String destName = getRemoteLocalDir(scopeId)
 				+ "/mapreduce_wsi_upload.jar";
 
+		// Deploy the jar to the remote, then let yarn do the rest
 		try {
 			copyToRemote(srcJarName, destName);
 			execRemote("yarn jar " + destName);
@@ -85,51 +90,92 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 			String destinationName) throws MapReduceWSIException {
 		// TODO
 	}
+	
+	
+	private String getRemoteLocalDir(long scopeId) {
+		return "~/mapreduce-wsi-local/" + scopeId;
+	}
 
-	private static void execRemote(String command) throws MapReduceWSIException {
-		initSSH();
+	private String getHDFSDir(long scopeId) {
+		return "/mapreduce-wsi/" + scopeId;
+	}
+
+	
+	/**
+	 * Execute a given command on the remote host. No further checking is
+	 * performed on the command string.
+	 * 
+	 * @param command
+	 * @throws MapReduceWSIException
+	 */
+	private void execRemote(String command) throws MapReduceWSIException {
+		SSHExec sshConnection = initSSHConnection();
 		try {
-			sharedSSH.exec(new ExecCommand(command));
+			// SSHXCUTE is not thread-safe
+			synchronized (sshConnection) {
+				sshConnection.exec(new ExecCommand(command));
+			}
 		} catch (TaskExecFailException e) {
 			e.printStackTrace();
 			throw new MapReduceWSIException("Failed to execute remote command",
 					e);
+		} finally {
+			sshConnection.disconnect();
 		}
 	}
 
-	private static void copyToRemote(String srcJarName, String destName)
+	/**
+	 * Copy a file to the remote host. Given paths are unchanged and not
+	 * checked.
+	 * 
+	 * @param srcJarName
+	 * @param destName
+	 * @throws MapReduceWSIException
+	 */
+	private void copyToRemote(String srcJarName, String destName)
 			throws MapReduceWSIException {
-		initSSH();
+		SSHExec sshConnection = initSSHConnection();
 		try {
-			sharedSSH.uploadSingleDataToServer(srcJarName, destName);
+			// SSHXCUTE is not thread-safe
+			synchronized (sshConnection) {
+				sshConnection.uploadSingleDataToServer(srcJarName, destName);
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new MapReduceWSIException(String.format(
 					"Failed to copy source file %s to destination %s",
 					srcJarName, destName), e);
+		} finally {
+			sshConnection.disconnect();
 		}
 	}
 
-	private static void initSSH() {
-		if (sharedSSH == null) {
-			synchronized (sharedSSHMutex) {
-				// DCL is fine with JRE1.5+
-				// http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
-				if (sharedSSH == null) {
-					ConnBean cb = new ConnBean("ip ", "username", "password");
-					sharedSSH = SSHExec.getInstance(cb);
-					sharedSSH.connect();
-				}
-			}
+	/**
+	 * Obtain a SSH connection to the remote host that hosts hadoop.
+	 * 
+	 * @return SSH connection handle. The caller must close it using
+	 *         {@link SSHExec.disconnect} after finishing to use it.
+	 */
+	private SSHExec initSSHConnection() throws MapReduceWSIException {
+		Properties properties = getConfig();
+		ConnBean cb = new ConnBean(properties.getProperty("remoteHost"),
+				properties.getProperty("remoteUserName"),
+				properties.getProperty("remotePassWord"));
+		SSHExec sshConnection = SSHExec.getInstance(cb);
+		if (!sshConnection.connect()) {
+			throw new MapReduceWSIException("Failed to connect to remote host "
+					+ properties.getProperty("remoteHost"));
 		}
-
+		return sshConnection;
 	}
 
-	private static String getRemoteLocalDir(long scopeId) {
-		return "~/mapreduce-wsi-local/" + scopeId;
-	}
+	/** Get global mapreduce-wsi configuration */
+	private Properties getConfig() {
+		ServletContext servletContext = (ServletContext) context
+				.getMessageContext().get(MessageContext.SERVLET_CONTEXT);
+		Properties prop = (Properties) servletContext.getAttribute("config");
 
-	private static String getHDFSDir(long scopeId) {
-		return "/mapreduce-wsi/" + scopeId;
+		assert prop != null;
+		return prop;
 	}
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+<entry key="remoteHost">centos-mr-worker-1f8ad9d3-e129-42aa-99f0-3cdb9e1eb679.novalocal</entry>
+<entry key="remoteUser">hdfsuser</entry>
+<entry key="remotePassword"></entry>
+</properties>
