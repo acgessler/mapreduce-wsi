@@ -13,7 +13,18 @@ MapReduceWSI is a web service end point that exposes subsets of the MR functiona
 
 Clients are isolated against each other only on a filesystem (HDFS) level, there is no mitigation or scheduling of compute loads.
 
-Getting started
+Documentation
 -------
 
 TODO: link javadoc
+
+
+Deployment using Tomcat 7
+-------
+
+- Build, export to WAR. Copy WAR to the `$TOMCAT/webapps` folder.
+- Get JAX-WS RI dependencies from http://jax-ws.java.net/ and copy all jars from `lib` to `$TOMCAT/lib`
+- (Re)start Tomcat
+- Navigate to `http://localhost:8080/mapreduce-wsi/mapreduce` to verify deployment.
+
+`http://localhost:8080/mapreduce-wsi/mapreduce?wsdl` to retrieve the service WSDL.
