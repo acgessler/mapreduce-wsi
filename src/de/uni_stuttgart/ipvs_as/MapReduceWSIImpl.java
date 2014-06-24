@@ -66,11 +66,22 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 
 		final String destName = getRemoteLocalDir(scopeId)
 				+ "/mapreduce_wsi_upload.jar";
+		
+		final StringBuilder sb = new StringBuilder();
+		sb.append("yarn jar ");
+		sb.append(destName);
+		sb.append(' ');
+		sb.append(getHDFSDir(scopeId));
+		sb.append(' ');
+		for (String arg : arguments) {
+			sb.append(arg);
+			sb.append(' ');
+		}
 
 		// Deploy the jar to the remote, then let yarn do the rest
 		try {
 			copyToRemote(srcJarName, destName);
-			execRemote("yarn jar " + destName);
+			execRemote(sb.toString());
 		} catch (MapReduceWSIException e) {
 			throw new MapReduceWSIException(
 					"Failed to run MR remotely on yarn", e);
