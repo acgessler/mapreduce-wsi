@@ -22,6 +22,8 @@ there is no mitigation or scheduling of compute loads.
 
 JavaDoc is available [here](http://acgessler.github.io/mapreduce-wsi/doc/index.html).
 
+A full example (actually, an integration test) can be found [here](https://github.com/acgessler/mapreduce-wsi/blob/master/test/src/de/uni_stuttgart/ipvs_as/test/EndToEndTest.java).
+
 ### Remote (Cluster) setup
 
 The _remote host_ is any node in your hadoop cluster that has network connectivity to the MapReduceWSI service.

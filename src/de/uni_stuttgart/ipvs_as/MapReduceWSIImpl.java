@@ -172,9 +172,10 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 	}
 
 	@Override
-	public void exportToHDFS(long scopeId, String jdbcURI, String dbName,
-			String dbUser, String dbCredentials, String query,
-			String destinationName) throws MapReduceWSIException {
+	public void exportToHDFS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String tableName, String updateColumn,
+			boolean allowInserts, String sourceName)
+			throws MapReduceWSIException {
 		// TODO
 	}
 

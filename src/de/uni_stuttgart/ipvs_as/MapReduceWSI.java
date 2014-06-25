@@ -79,10 +79,12 @@ public interface MapReduceWSI {
 			throws MapReduceWSIException;
 
 	/**
-	 * Import tuples from a JDBC compatible RDBMS into HDFS.
+	 * Import rows from a JDBC-compatible RDBMS into text files on HDFS.
 	 * 
 	 * @param jdbcURI
-	 *            JDBC URI under which the source database is accessible
+	 *            JDBC URI under which the source database is accessible. Note
+	 *            that the source database is accessed from *within* the hadoop
+	 *            cluster.
 	 * @param query
 	 *            SQL SELECT query fragment to filter the input database. Only
 	 *            simple projections and filters are allowed. NO trailing
@@ -116,8 +118,30 @@ public interface MapReduceWSI {
 			String dbCredentials, String query, String partitionColumn,
 			String destinationName) throws MapReduceWSIException;
 
-	// TODO
-	void exportToHDFS(long scopeId, String jdbcURI, String dbName,
-			String dbUser, String dbCredentials, String query,
-			String destinationName) throws MapReduceWSIException;
+	/**
+	 * Export rows from text files on HDFS to a JDBC-compatible RDBMS
+	 * 
+	 * @param jdbcURI
+	 *            JDBC URI under which the destination database is accessible.
+	 *            Note that the destination database is accessed from *within*
+	 *            the hadoop cluster.
+	 * 
+	 * @param tableName
+	 *            Name of a pre-existing table to insert/update into.
+	 * @param updateColumn
+	 *            Name of the anchor column to be updated. The corresponding
+	 *            HDFS column is the first column in each line of text.
+	 * @param allowInserts
+	 *            If true, keys that are not found in the table are inserted
+	 *            rather than updated.
+	 * @param sourceName
+	 *            Source name from which to get the data from HDFS, typically
+	 *            the output of a previous MR invocation. Note that the actual
+	 *            physical HDFS path has a prefix that depends on the scope.
+	 * @throws MapReduceWSIException
+	 */
+	void exportToHDFS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String tableName, String updateColumn,
+			boolean allowInserts, String sourceName)
+			throws MapReduceWSIException;
 }
