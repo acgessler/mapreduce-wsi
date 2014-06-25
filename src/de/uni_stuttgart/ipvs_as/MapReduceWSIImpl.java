@@ -18,16 +18,16 @@ import net.neoremind.sshxcute.task.impl.ExecCommand;
 
 /**
  * Implementation of {@link MapReduceWSI} that can be run on a node that is not
- * part of a hadoop cluster but has password-less (user name hdfsuser) SSH
- * access to a *nix cluster node with the following clients installed:
- * 
+ * part of a hadoop cluster but has (password-based) SSH access to a *nix
+ * cluster node with the following clients installed:
+ * <hr>
  * <ul>
  * <li>sqoop
  * <li>hadoop
  * <li>yarn
  * </ul>
  * 
- * This implementation has currently massive drawbacks, rendering it unusable
+ * This implementation currently has massive drawbacks, rendering it unusable
  * for productions environments.
  * <ul>
  * <li>There is no real ACL-based isolation in HDFS. If MR jobs wish they can
@@ -38,6 +38,7 @@ import net.neoremind.sshxcute.task.impl.ExecCommand;
  * users of the MapReduceWSI service.
  * </ul>
  * 
+ * @author acgessler
  * */
 @WebService(endpointInterface = "de.uni_stuttgart.ipvs_as.MapReduceWSI")
 public class MapReduceWSIImpl implements MapReduceWSI {

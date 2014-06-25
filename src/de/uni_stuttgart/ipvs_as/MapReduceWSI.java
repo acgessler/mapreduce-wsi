@@ -11,10 +11,10 @@ import javax.jws.soap.SOAPBinding.Style;
  * 
  * Clients can
  * <ul>
- * <li>Import structured data from RDBMS into HDFS (backed by Apache sqoop)
- * <li>Export structured data from HDFS to RDBM (backed by Apache sqoop)
- * <li>Deploy custom MapReduce code onto the cluster (as JAR) and run it (If
- * additional resources are required for the MR, they should be embedded into
+ * <li>Import structured data from RDBMS into HDFS (backed by Apache Sqoop)
+ * <li>Export structured data from HDFS to RDBM (backed by Apache Sqoop)
+ * <li>Deploy a JAR containing custom MapReduce code onto the cluster and run it
+ * (If additional resources are required for the MR, they can be embedded into
  * the JAR.)
  * </ul>
  * 
@@ -31,7 +31,7 @@ import javax.jws.soap.SOAPBinding.Style;
  * resources in the cluster are limited and simultaneously running jobs do
  * affect each other's runtime.
  * 
- * @author - acg
+ * @author acgessler
  * */
 @WebService
 @SOAPBinding(style = Style.RPC)

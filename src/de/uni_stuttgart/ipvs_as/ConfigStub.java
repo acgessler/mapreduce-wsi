@@ -11,9 +11,10 @@ import javax.servlet.annotation.WebListener;
  * Upon servlet startup, load the mapreduce-wsi configuration file and make it
  * available in the "config" attribute of the servlet context.
  * 
- * According to http://stackoverflow.com/questions/19610234/ this is a way of
- * loading a configuration file once and allowing JAX-WS endpoint instances
- * running in a servlet to access it.
+ * According to http://stackoverflow.com/questions/19610234/ this is a good way
+ * of loading a configuration file once and allowing JAX-WS endpoint instances
+ * running in a servlet to access it. A whole class for this is not verbose
+ * after all. If anybody knows a better way, please enlighten me.
  */
 @WebListener
 public class ConfigStub implements ServletContextListener {

@@ -31,7 +31,7 @@ import de.uni_stuttgart.ipvs_as.MapReduceWSI;
  * The JAR containing the executable MR code is currently checked into source
  * control as test/integration_test_mapreduce_bundle.jar. It is built from the
  * {@link de.uni_stuttgart.ipvs_as.test.mapreduce} package.
- * 
+ * <hr>
  * <b>TEST OUTLINE: </b>
  * 
  * The initial DB import adds 14k tuples of the following form:

@@ -28,7 +28,7 @@ The _remote host_ is any node in your hadoop cluster that has network connectivi
 If the service is served from a node that is part of the cluster and satifies the requirements below,
 configure the remote host to be `localhost`.
 
-- On the remote host, make sure the sqoop, yarn and hadoop binaries are available
+- On the remote host, make sure the `sqoop`, `yarn` and `hadoop` binaries are available
 - On the remote host, execute `setup/hadoop_prepare.sh` under an account that can do password-less sudo
 - Make sure the remote host allows password-only authentication for SSH.
 
