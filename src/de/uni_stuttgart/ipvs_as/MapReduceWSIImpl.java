@@ -2,6 +2,8 @@ package de.uni_stuttgart.ipvs_as;
 
 import java.util.Properties;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.annotation.Resource;
 import javax.jws.WebService;
@@ -21,8 +23,21 @@ import net.neoremind.sshxcute.task.impl.ExecCommand;
  * 
  * <ul>
  * <li>sqoop
+ * <li>hadoop
  * <li>yarn
  * </ul>
+ * 
+ * This implementation has currently massive drawbacks, rendering it unusable
+ * for productions environments.
+ * <ul>
+ * <li>There is no real ACL-based isolation in HDFS. If MR jobs wish they can
+ * delete each others data. All jobs execute as the same user.
+ * <li>Authentication is generally password based and passwords are transmitted
+ * in plain text or leaked into configuration and command lines.
+ * <li>Lack of logging and proper error forwarding from inside the cluster to
+ * users of the MapReduceWSI service.
+ * </ul>
+ * 
  * */
 @WebService(endpointInterface = "de.uni_stuttgart.ipvs_as.MapReduceWSI")
 public class MapReduceWSIImpl implements MapReduceWSI {
@@ -66,7 +81,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 
 		final String destName = getRemoteLocalDir(scopeId)
 				+ "/mapreduce_wsi_upload.jar";
-		
+
 		final StringBuilder sb = new StringBuilder();
 		sb.append("yarn jar ");
 		sb.append(destName);
@@ -88,11 +103,71 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 		}
 	}
 
+	private static final Pattern selectPattern = Pattern.compile(
+			"SELECT(.*?)FROM(.*?)(WHERE.*|)$", Pattern.CASE_INSENSITIVE);
+
 	@Override
-	public void importIntoHDFS(long scopeId, String jdbcURI, String dbName,
-			String dbUser, String dbCredentials, String query,
+	public void importIntoHDFS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String query, String partitionColumn,
 			String destinationName) throws MapReduceWSIException {
-		// TODO
+
+		if (partitionColumn.indexOf('.') == -1) {
+			throw new IllegalArgumentException(
+					"|partitionColumn| must be prefixed by table");
+		}
+
+		// TODO(acg) Replace all of the following with a proper
+		// query parser/rewrite engine.
+		final Matcher queryMatch = selectPattern.matcher(query);
+		if (!queryMatch.find()) {
+			throw new IllegalArgumentException("|query| unrecognized");
+		}
+
+		// Sqoop requires WHERE/AND $CONDITIONS to be appended to the
+		// query so it can insert the partition condition.
+		final String fullQuery = String.format("%s %s $CONDITIONS", query,
+				(queryMatch.group(3).toUpperCase().equals("WHERE") ? " AND"
+						: " WHERE"));
+
+		// If no --boundary-query is given, Sqoop does a
+		// SELECT MIN(t1.<partitionColumn>), MAX(t1.<partitionColumn>)
+		// on the result of |escapedQuery|, causing it to fail if
+		// the selected columns do not include the partition column.
+		//
+		// Here we try to detect absence of the partition column in
+		// the SELECT clause and build an appropriate --boundary-query.
+		final String partitionColumnAfterPeriod = partitionColumn
+				.substring(partitionColumn.indexOf(".") + 1);
+
+		String boundaryQuery = query;
+		if (!Pattern.matches("(\\b|\\.)" + partitionColumnAfterPeriod + "\\b",
+				queryMatch.group(1))) {
+			// TODO(acg) The pattern doesn't catch renaming variables
+			boundaryQuery = String.format("SELECT MIN(%s), MAX(%s) FROM %s %s",
+					partitionColumnAfterPeriod, partitionColumnAfterPeriod,
+					queryMatch.group(2), queryMatch.group(3));
+		}
+
+		final String absoluteDestinationName = String.format("%s/%s",
+				getHDFSDir(scopeId), destinationName);
+
+		final String escapedUserName = escapeShellArgument(dbUser);
+		final String escapedPassword = escapeShellArgument(dbCredentials);
+		final String escapedURI = escapeShellArgument(jdbcURI);
+		final String escapedFullQuery = escapeShellArgument(fullQuery);
+		final String escapedBoundaryQuery = escapeShellArgument(boundaryQuery);
+		try {
+			execRemote(String.format(
+					"sqoop import --connect %s --username %s --password %s "
+							+ "--query %s --target-dir %s --split-by %s "
+							+ "--boundary-query %s", escapedURI,
+					escapedUserName, escapedPassword, escapedFullQuery,
+					absoluteDestinationName, partitionColumn,
+					escapedBoundaryQuery));
+		} catch (MapReduceWSIException e) {
+			throw new MapReduceWSIException(
+					"Failed to run import into HDFS remotely using sqoop", e);
+		}
 	}
 
 	@Override
@@ -100,6 +175,11 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 			String dbUser, String dbCredentials, String query,
 			String destinationName) throws MapReduceWSIException {
 		// TODO
+	}
+
+	private String escapeShellArgument(String arg) {
+		// TODO(acg): verify that this is sufficient to escape shell args
+		return String.format("'%s'", arg.replace("'", "\\'"));
 	}
 
 	private String getRemoteLocalDir(long scopeId) {

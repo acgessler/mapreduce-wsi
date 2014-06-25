@@ -79,12 +79,32 @@ public interface MapReduceWSI {
 			throws MapReduceWSIException;
 
 	/**
-	 * Import tuples from a RDBMS into HDFS
+	 * Import tuples from a JDBC compatible RDBMS into HDFS.
 	 * 
 	 * @param jdbcURI
 	 *            JDBC URI under which the source database is accessible
 	 * @param query
-	 *            Arbitrary SQL SELECT query to filter the input database
+	 *            SQL SELECT query fragment to filter the input database. Only
+	 *            simple projections and filters are allowed. NO trailing
+	 *            semicolons. WHERE clauses must put parentheses around any OR
+	 *            clauses, i.e.
+	 * 
+	 *            <pre>
+	 * SELECT ... FROM ... WHERE (a OR b)
+	 * </pre>
+	 * 
+	 *            as to allow adding further AND clauses.
+	 * @param partitionColumn
+	 *            This column is used to partition the input data for parallel
+	 *            import from multiple mappers. For best results, it should have
+	 *            many distinct values that are uniformly distributed (i.e. a
+	 *            plain AUTO INCREMENT / SERIAL column is perfect).
+	 * 
+	 *            The column name must be prefixed by the table name, i.e.
+	 * 
+	 *            <pre>
+	 * a.id
+	 * </pre>
 	 * @param destinationName
 	 *            Destination name under which to store the data in HDFS. Note
 	 *            that the actual physical HDFS path has a prefix that depends
@@ -92,12 +112,12 @@ public interface MapReduceWSI {
 	 * @see runMapReduce
 	 * */
 	@WebMethod
-	void importIntoHDFS(long scopeId, String jdbcURI, String dbName,
-			String dbUser, String dbCredentials, String query,
+	void importIntoHDFS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String query, String partitionColumn,
 			String destinationName) throws MapReduceWSIException;
 
 	// TODO
 	void exportToHDFS(long scopeId, String jdbcURI, String dbName,
 			String dbUser, String dbCredentials, String query,
-			String destinationName)  throws MapReduceWSIException;
+			String destinationName) throws MapReduceWSIException;
 }
