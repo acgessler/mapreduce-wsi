@@ -34,7 +34,7 @@ public class TestReducer extends
 		// The assumption in the test is that the mean will
 		// be exactly 3. The extra term is to avoid any
 		// deviations being accidentally hidden by the integer division.
-		result.set((int) ((sum / count) - (count % sum) * 100));
+		result.set((int) ((sum / count) - (sum % count) * 100));
 		context.write(key, result);
 	}
 }

@@ -23,12 +23,15 @@ public class TestMapper extends
 	public void map(LongWritable key, Text value, Context context)
 			throws IOException, InterruptedException {
 
-		// Each input value is a CVS line with 6 integers, i.e
-		// 4, 7, 1224, 24, 3, 9. Input keys are sequence numbers
+		// Each input value is a CVS line with 7 integers, i.e
+		// 4, 7, 1224, 24, 3, 9, 2. Input keys are sequence numbers
 		// and meaningless for this purpose.
 
 		String[] parts = value.toString().split(",");
-		assert parts.length == 5;
+		if (parts.length != 7) {
+			System.err.println("Invalid input to map stage: expected 7-tuple");
+			System.exit(-1);
+		}
 
 		int i = 0;
 		for (String part : parts) {

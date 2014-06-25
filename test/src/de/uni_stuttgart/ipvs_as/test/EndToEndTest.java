@@ -25,6 +25,9 @@ import de.uni_stuttgart.ipvs_as.MapReduceWSI;
  * configured in constants below work. Also, PostgreSQL must be accessible from
  * within the hadoop cluster.
  * 
+ * Before running you should also review the constants in the class, in
+ * particular {@link DB_URI}.
+ * 
  * The JAR containing the executable MR code is currently checked into source
  * control as test/integration_test_mapreduce_bundle.jar. It is built from the
  * {@link de.uni_stuttgart.ipvs_as.test.mapreduce} package.
@@ -58,10 +61,9 @@ public class EndToEndTest {
 	public static final String SERVICE_NAME = "MapReduceWSIImplService";
 
 	// Change as needed
-	public static String DB_URI = "jdbc:postgresql://localhost:5432/";
-
-	// Initialized to be the canonical name of DB_URI
-	public static String DB_CANONICAL_URI;
+	// localhost does not work here: the DB is also accessed from within the
+	// hadoop cluster.
+	public static String DB_URI = "jdbc:postgresql://10.0.0.8:5432/";
 
 	public static final String DB_USER = "postgres";
 	public static final String DB_PW = "postgres";
@@ -96,10 +98,10 @@ public class EndToEndTest {
 			// Import data into HDFS, discard the primary key
 			// (This verifies correct filtering)
 			final String importQuery = String
-					.format("SELECT (num0, num1, num2, num3, num4, num5, num6) from %s;",
+					.format("SELECT num0, num1, num2, num3, num4, num5, num6 FROM %s",
 							DB_INPUT_TABLE_NAME);
-			port.importIntoHDFS(scope, DB_CANONICAL_URI, DB_NAME, DB_USER,
-					DB_PW, importQuery, HDFS_INPUT_NAME);
+			port.importIntoHDFS(scope, DB_URI, DB_USER, DB_PW, importQuery,
+					DB_INPUT_TABLE_NAME + ".id", HDFS_INPUT_NAME);
 
 			// Run MR with the pre-compiled JAR
 			final String absolutePathToSourceJar = (new File(
@@ -175,17 +177,6 @@ public class EndToEndTest {
 	}
 
 	public static void main(String[] arguments) throws Exception {
-		// DB_URI will be accessed from within the hadoop cluster so
-		// localhost is not a viable host name.
-		try {
-			final String me = java.net.InetAddress.getLocalHost()
-					.getCanonicalHostName();
-			System.out.println("Found own host name to be " + me);
-			DB_CANONICAL_URI = DB_URI.replace("localhost", me);
-		} catch (UnknownHostException e) {
-			e.printStackTrace();
-		}
-
 		(new EndToEndTest()).run();
 	}
 }

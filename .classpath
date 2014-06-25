@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="test/src"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="lib" path="3rdparty/sshxcute-1.0.jar"/>
@@ -14,5 +15,9 @@
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/gessleah/Desktop/acg_ba/hadoop-2.4.0/share/hadoop/common/hadoop-common-2.4.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/gessleah/Desktop/acg_ba/hadoop-2.4.0/share/hadoop/mapreduce/hadoop-mapreduce-client-app-2.4.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/gessleah/Desktop/acg_ba/hadoop-2.4.0/share/hadoop/mapreduce/hadoop-mapreduce-client-common-2.4.0.jar"/>
+	<classpathentry kind="lib" path="C:/Users/gessleah/Desktop/acg_ba/hadoop-2.4.0/share/hadoop/mapreduce/hadoop-mapreduce-client-core-2.4.0.jar"/>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>
