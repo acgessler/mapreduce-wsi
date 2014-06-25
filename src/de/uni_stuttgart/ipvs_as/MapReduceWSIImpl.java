@@ -104,8 +104,12 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 		}
 	}
 
+	// Pattern to decompose a simple SQL statement into its primary
+	// constituents. The pattern is designed to ensure that the very last WHERE
+	// is matched (if any).
 	private static final Pattern selectPattern = Pattern.compile(
-			"SELECT(.*?)FROM(.*?)(WHERE.*|)$", Pattern.CASE_INSENSITIVE);
+			"SELECT(.*?)FROM(.*?)(WHERE(?!.*WHERE).*|)$",
+			Pattern.CASE_INSENSITIVE);
 
 	@Override
 	public void importIntoHDFS(long scopeId, String jdbcURI, String dbUser,
@@ -117,18 +121,17 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 					"|partitionColumn| must be prefixed by table");
 		}
 
-		// TODO(acg) Replace all of the following with a proper
-		// query parser/rewrite engine.
+		// TODO(acg) Replace all of the following with a proper rewrite engine
 		final Matcher queryMatch = selectPattern.matcher(query);
 		if (!queryMatch.find()) {
-			throw new IllegalArgumentException("|query| unrecognized");
+			throw new IllegalArgumentException("Unrecognized |query|");
 		}
 
 		// Sqoop requires WHERE/AND $CONDITIONS to be appended to the
 		// query so it can insert the partition condition.
 		final String fullQuery = String.format("%s %s $CONDITIONS", query,
-				(queryMatch.group(3).toUpperCase().equals("WHERE") ? " AND"
-						: " WHERE"));
+				(queryMatch.group(3).toUpperCase().startsWith("WHERE") ? "AND"
+						: "WHERE"));
 
 		// If no --boundary-query is given, Sqoop does a
 		// SELECT MIN(t1.<partitionColumn>), MAX(t1.<partitionColumn>)
@@ -141,9 +144,8 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 				.substring(partitionColumn.indexOf(".") + 1);
 
 		String boundaryQuery = query;
-		if (!Pattern.matches("(\\b|\\.)" + partitionColumnAfterPeriod + "\\b",
-				queryMatch.group(1))) {
-			// TODO(acg) The pattern doesn't catch renaming variables
+		if (!Pattern.matches("(\\b|\\.)" + partitionColumnAfterPeriod
+				+ "\\b(?!\\s*AS)", queryMatch.group(1))) {
 			boundaryQuery = String.format("SELECT MIN(%s), MAX(%s) FROM %s %s",
 					partitionColumnAfterPeriod, partitionColumnAfterPeriod,
 					queryMatch.group(2), queryMatch.group(3));
