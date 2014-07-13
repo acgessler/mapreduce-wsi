@@ -79,8 +79,28 @@ public class EndToEndTest {
 			+ "integration_test_mapreduce_bundle.jar";
 
 	public static final int COUNT_INPUT_TUPLES = 14000; /* Must be multiple of 7 */
+	
+	
+	public static final String STREAMING_MAPPER_SCRIPT = 
+		"#!/usr/bin/env python\n" +
+		"import sys\n" +
+		"for line in sys.stdin:\n" +
+		" for index, word in enumerate(line.strip().split(',')):\n" +
+		"   print '%s\t%s' % (index, word)\n" +
+		"\n";
+	
+	public static final String STREAMING_REDUCER_SCRIPT = 
+		"#!/usr/bin/env python\n" +
+		"import sys\n" +
+		"import itertools\n" +
+		"lines = (line.split() for line in sys.stdin)\n" +
+		"for index, values in itertools.groupby(lines, lambda x : x[0]):\n" +
+		"  values = list(int(v[1]) for v in values)\n" +
+		"  mean = sum(values) / float(len(values))\n" +
+		"  print '%s %s' % (index, mean)\n" +
+		"\n";
 
-	public void run() throws Exception {
+	public void run(boolean useStreamingMode) throws Exception {
 		// Populate the DB with all table schemata and synthetic inputs
 		initDBContents();
 
@@ -97,17 +117,24 @@ public class EndToEndTest {
 
 			// Import data into HDFS, discard the primary key
 			// (This verifies correct filtering)
-			final String importQuery = String
-					.format("SELECT num0, num1, num2, num3, num4, num5, num6 FROM %s",
-							DB_INPUT_TABLE_NAME);
+			final String importQuery = String.format(
+					"SELECT num0, num1, num2, num3, num4, num5, num6 FROM %s",
+					DB_INPUT_TABLE_NAME);
 			port.importIntoHDFS(scope, DB_URI, DB_USER, DB_PW, importQuery,
 					DB_INPUT_TABLE_NAME + ".id", HDFS_INPUT_NAME);
 
-			// Run MR with the pre-compiled JAR
-			final String absolutePathToSourceJar = (new File(
-					PREBUILT_MAPREDUCE_JAR)).getAbsolutePath();
-			port.runMapReduce(scope, absolutePathToSourceJar, new String[] {
-					HDFS_INPUT_NAME, HDFS_OUTPUT_NAME });
+			if (useStreamingMode) {
+				port.runStreamingMapReduce(scope, STREAMING_MAPPER_SCRIPT,
+						STREAMING_REDUCER_SCRIPT, HDFS_INPUT_NAME,
+						HDFS_OUTPUT_NAME);
+			} else {
+				// Run MR with the pre-compiled JAR
+				final String absolutePathToSourceJar = (new File(
+						PREBUILT_MAPREDUCE_JAR)).getAbsolutePath();
+				port.runMapReduce(scope, absolutePathToSourceJar, new String[] {
+						HDFS_INPUT_NAME, HDFS_OUTPUT_NAME });
+
+			}
 
 			// port.exportToHDFS(scopeId, jdbcURI, dbName, dbUser,
 			// dbCredentials, query, destinationName)
@@ -177,6 +204,7 @@ public class EndToEndTest {
 	}
 
 	public static void main(String[] arguments) throws Exception {
-		(new EndToEndTest()).run();
+		(new EndToEndTest()).run(true);
+		(new EndToEndTest()).run(false);
 	}
 }
