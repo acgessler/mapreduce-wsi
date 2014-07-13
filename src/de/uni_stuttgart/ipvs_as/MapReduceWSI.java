@@ -79,6 +79,32 @@ public interface MapReduceWSI {
 			throws MapReduceWSIException;
 
 	/**
+	 * Run a MR job from a given Streaming Mode Mapper and Reducer script.
+	 * 
+	 * This deploys both scripts (given as a string containing their full source
+	 * code) onto the cluster and runs them as Streaming Mode MapReduce jobs.
+	 * 
+	 * @param mapperScript
+	 *            Source code of the mapper script. See Hadoop reference for
+	 *            examples. Must include a valid UNIX shebang.
+	 * @param reducerScript
+	 *            Source code of the reducer script. See Hadoop reference for
+	 *            examples. Must include a valid UNIX shebang.
+	 * @param input
+	 *            HDFS input to run the MapReduce from. This can be a directory
+	 *            or a single file name or a wildcard pattern.
+	 * @param output
+	 *            Output HDFS file name or directory.
+	 * 
+	 * @see <a href="http://hadoop.apache.org/docs/r1.2.1/streaming.html">Hadoop
+	 *      Streaming Mode (external)</a>
+	 */
+	@WebMethod
+	void runStreamingMapReduce(long scopeId, String mapperScript,
+			String reducerScript, String input, String output)
+			throws MapReduceWSIException;
+
+	/**
 	 * Import rows from a JDBC-compatible RDBMS into text files on HDFS.
 	 * 
 	 * @param jdbcURI

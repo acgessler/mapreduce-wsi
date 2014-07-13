@@ -1,5 +1,9 @@
 package de.uni_stuttgart.ipvs_as;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Properties;
 import java.util.Random;
 import java.util.regex.Matcher;
@@ -12,6 +16,7 @@ import javax.xml.ws.WebServiceContext;
 import javax.xml.ws.handler.MessageContext;
 
 import net.neoremind.sshxcute.core.ConnBean;
+import net.neoremind.sshxcute.core.IOptionName;
 import net.neoremind.sshxcute.core.SSHExec;
 import net.neoremind.sshxcute.exception.TaskExecFailException;
 import net.neoremind.sshxcute.task.impl.ExecCommand;
@@ -42,6 +47,11 @@ import net.neoremind.sshxcute.task.impl.ExecCommand;
  * */
 @WebService(endpointInterface = "de.uni_stuttgart.ipvs_as.MapReduceWSI")
 public class MapReduceWSIImpl implements MapReduceWSI {
+
+	// TODO(acgessler) It would be nice to automatically locate the file
+	// using the $HADOOP_HOME environment variable. In my (Ambari) setup
+	// $HADOOP_HOME is not globally set though.
+	private static final String HADOOP_STREAMING_JAR = "/usr/lib/hadoop-mapreduce/hadoop-streaming.jar";
 
 	@Resource
 	private WebServiceContext context;
@@ -94,13 +104,109 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 			sb.append(' ');
 		}
 
-		// Deploy the jar to the remote, then let yarn do the rest
+		// Deploy the JAR to the remote, then let yarn do the rest
 		try {
 			copyToRemote(srcJarName, destName);
 			execRemote(sb.toString());
 		} catch (MapReduceWSIException e) {
 			throw new MapReduceWSIException(
-					"Failed to run MR remotely on yarn", e);
+					"Failed to run MR remotely on the cluster", e);
+		}
+	}
+
+	// Write |contents| to a temporary file and returns the absolute path name
+	// of the file. The file obtained must be deleted by the caller.
+	private File writeToTemporaryFile(String contents) throws IOException {
+		final File file = File.createTempFile("mapreduce_wsi_tmp", null);
+		final FileWriter fout = new FileWriter(file);
+		try {
+			fout.write(contents);
+		} catch (IOException ex) {
+			throw ex;
+		} finally {
+			fout.close();
+		}
+		return file;
+	}
+
+	@Override
+	public void runStreamingMapReduce(long scopeId, String mapperScript,
+			String reducerScript, String input, String output)
+			throws MapReduceWSIException {
+		final String mapFileDestName = getRemoteLocalDir(scopeId)
+				+ "/streaming_mapper";
+		final String reduceFileDestName = getRemoteLocalDir(scopeId)
+				+ "/streaming_reducer";
+
+		// Deploy mapper and reducer script.
+		// TODO(acgessler) Unfortunately, SSHXCUTE only has a utility
+		// for uploading files from local disk so we have to dump them to a
+		// temporary, local file first.
+		try {
+			final File mapFile = writeToTemporaryFile(mapperScript);
+			final File reduceFile = writeToTemporaryFile(reducerScript);
+
+			try {
+				copyToRemote(mapFile.getAbsolutePath(), mapFileDestName);
+				copyToRemote(reduceFile.getAbsolutePath(), reduceFileDestName);
+			} catch (MapReduceWSIException e) {
+				throw new MapReduceWSIException(
+						"Failed to deploy Streaming Mode Mapper and Reducer script",
+						e);
+			} finally {
+				// deleteOnExit() is not sufficient for a potentially
+				// long-running web service.
+				mapFile.delete();
+				reduceFile.delete();
+			}
+		} catch (IOException e) {
+			throw new MapReduceWSIException(
+					"Failed to write Streaming Mode Mapper and Reducer script to (local) temporary files",
+					e);
+		}
+
+		// Build the command line for running the Streaming MapReduce
+		// http://hadoop.apache.org/docs/r1.2.1/streaming.html
+		final String hdfsPrefix = getHDFSDir(scopeId) + "/";
+		final StringBuilder sb = new StringBuilder();
+		sb.append("hadoop jar ");
+		sb.append(HADOOP_STREAMING_JAR);
+		sb.append(' ');
+
+		sb.append("-input ");
+		sb.append(hdfsPrefix);
+		sb.append(input);
+		sb.append(' ');
+
+		sb.append("-output ");
+		sb.append(hdfsPrefix);
+		sb.append(output);
+		sb.append(' ');
+
+		sb.append("-mapper ");
+		sb.append(mapFileDestName);
+		sb.append(' ');
+
+		sb.append("-reducer ");
+		sb.append(reduceFileDestName);
+		sb.append(' ');
+
+		// The -file causes the scripts to be deployed the cluster machines as a
+		// part of job submission.
+		sb.append("-file ");
+		sb.append(mapFileDestName);
+		sb.append(' ');
+
+		sb.append("-file ");
+		sb.append(reduceFileDestName);
+		// sb.append(' ');
+
+		// Run Streaming MapReduce
+		try {
+			execRemote(sb.toString());
+		} catch (MapReduceWSIException e) {
+			throw new MapReduceWSIException(
+					"Failed to run Streaming MR remotely on the cluster", e);
 		}
 	}
 
@@ -121,7 +227,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 					"|partitionColumn| must be prefixed by table");
 		}
 
-		// TODO(acg) Replace all of the following with a proper rewrite engine
+		// TODO(acgessler) Replace this with a proper rewrite engine
 		final Matcher queryMatch = selectPattern.matcher(query);
 		if (!queryMatch.find()) {
 			throw new IllegalArgumentException("Unrecognized |query|");
@@ -182,7 +288,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 	}
 
 	private String escapeShellArgument(String arg) {
-		// TODO(acg): verify that this is sufficient to escape shell args
+		// TODO(acgessler): verify that this is sufficient to escape shell args
 		return String.format("'%s'", arg.replace("'", "\\'"));
 	}
 
@@ -261,6 +367,7 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 			throw new MapReduceWSIException("Failed to connect to remote host "
 					+ properties.getProperty("remoteHost"));
 		}
+		SSHExec.setOption(IOptionName.INTEVAL_TIME_BETWEEN_TASKS, 0L);
 		return sshConnection;
 	}
 
