@@ -14,6 +14,7 @@ to a cluster node. However it is also possible to serve the web service directly
  - Deploy a JAR containing custom MapReduce code onto the cluster and run it (If
    additional resources are required for the MR, they can be embedded into
    the JAR.)
+ - Run [Streaming Mode](http://hadoop.apache.org/docs/r1.2.1/streaming.html) Mapper and Reducer scripts directly by specifying the script source code.
 
 Clients are weakly isolated against each other only on a filesystem (HDFS) level,
 there is no mitigation or scheduling of compute loads.
