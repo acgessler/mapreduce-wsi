@@ -145,29 +145,24 @@ public interface MapReduceWSI {
 			String destinationName) throws MapReduceWSIException;
 
 	/**
-	 * Export rows from text files on HDFS to a JDBC-compatible RDBMS
+	 * Export rows from text files on HDFS to a JDBC-compatible RDBMS.
 	 * 
 	 * @param jdbcURI
 	 *            JDBC URI under which the destination database is accessible.
 	 *            Note that the destination database is accessed from *within*
-	 *            the hadoop cluster.
+	 *            the Hadoop cluster.
 	 * 
 	 * @param tableName
-	 *            Name of a pre-existing table to insert/update into.
-	 * @param updateColumn
-	 *            Name of the anchor column to be updated. The corresponding
-	 *            HDFS column is the first column in each line of text.
-	 * @param allowInserts
-	 *            If true, keys that are not found in the table are inserted
-	 *            rather than updated.
+	 *            Name of a pre-existing table to insert into. The table must
+	 *            allow insertion of all values from HDFS without violating any
+	 *            primary key or other constraints.
 	 * @param sourceName
 	 *            Source name from which to get the data from HDFS, typically
 	 *            the output of a previous MR invocation. Note that the actual
 	 *            physical HDFS path has a prefix that depends on the scope.
 	 * @throws MapReduceWSIException
 	 */
-	void exportToHDFS(long scopeId, String jdbcURI, String dbUser,
-			String dbCredentials, String tableName, String updateColumn,
-			boolean allowInserts, String sourceName)
+	void exportToRDBMS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String tableName, String sourceName)
 			throws MapReduceWSIException;
 }

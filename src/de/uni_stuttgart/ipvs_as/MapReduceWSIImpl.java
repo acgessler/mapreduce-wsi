@@ -257,8 +257,8 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 					queryMatch.group(2), queryMatch.group(3));
 		}
 
-		final String absoluteDestinationName = String.format("%s/%s",
-				getHDFSDir(scopeId), destinationName);
+		final String absoluteDestinationName = escapeShellArgument(String
+				.format("%s/%s", getHDFSDir(scopeId), destinationName));
 
 		final String escapedUserName = escapeShellArgument(dbUser);
 		final String escapedPassword = escapeShellArgument(dbCredentials);
@@ -280,11 +280,28 @@ public class MapReduceWSIImpl implements MapReduceWSI {
 	}
 
 	@Override
-	public void exportToHDFS(long scopeId, String jdbcURI, String dbUser,
-			String dbCredentials, String tableName, String updateColumn,
-			boolean allowInserts, String sourceName)
+	public void exportToRDBMS(long scopeId, String jdbcURI, String dbUser,
+			String dbCredentials, String tableName, String sourceName)
 			throws MapReduceWSIException {
-		// TODO
+
+		final String absoluteSourceName = escapeShellArgument(String.format(
+				"%s/%s", getHDFSDir(scopeId), sourceName));
+
+		final String escapedUserName = escapeShellArgument(dbUser);
+		final String escapedPassword = escapeShellArgument(dbCredentials);
+		final String escapedURI = escapeShellArgument(jdbcURI);
+		final String escapedTableName = escapeShellArgument(tableName);
+
+		try {
+			execRemote(String
+					.format("sqoop export --connect %s --username %s --password %s "
+							+ "--table %s --export-dir %s --fields-terminated-by '\\t'",
+							escapedURI, escapedUserName, escapedPassword,
+							escapedTableName, absoluteSourceName));
+		} catch (MapReduceWSIException e) {
+			throw new MapReduceWSIException(
+					"Failed to run export to SQL remotely using sqoop", e);
+		}
 	}
 
 	private String escapeShellArgument(String arg) {
